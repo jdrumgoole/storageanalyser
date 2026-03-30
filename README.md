@@ -43,6 +43,28 @@ Launch the web UI with `storageanalyser --web`. Features include:
 - Cleanup script download for selected items
 - Google Drive integration and cross-environment deduplication
 
+### Screenshots
+
+**Scan form** with configurable skipped directories:
+
+![Scan Form](docs/screenshot-scan-form.png)
+
+**Results summary** with disk usage pie chart and summary cards:
+
+![Results Summary](docs/screenshot-results-summary.png)
+
+**Category breakdown** and clickable **treemap**:
+
+![Category & Treemap](docs/screenshot-category-treemap.png)
+
+**Recommendations** organized by category tabs:
+
+![Recommendations](docs/screenshot-recommendations.png)
+
+**Duplicate detection** with copy count and wasted space:
+
+![Duplicates](docs/screenshot-duplicates.png)
+
 ## Skipped Directories
 
 By default, certain directories are skipped during scans (cloud storage, macOS system

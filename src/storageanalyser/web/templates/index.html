@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StorageAnalyser</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="app">
+    <header>
+        <h1>StorageAnalyser</h1>
+        <span class="subtitle">macOS Storage Analyzer &amp; Cleanup Recommender</span>
+        <span class="version">v{{ version }}</span>
+        <div style="flex:1"></div>
+        <button id="exit-btn" class="btn btn-exit" title="Shut down server and close">Exit</button>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" data-tab="local">Local Disk</button>
+        <button class="tab" data-tab="gdrive">Google Drive</button>
+        <button class="tab" data-tab="dedup">Cross-Environment Dedup</button>
+    </div>
+
+    <!-- ═══════════════ LOCAL DISK TAB ═══════════════ -->
+    <div id="tab-local" class="tab-content active">
+
+        <!-- Scan Form -->
+        <form id="scan-form" class="scan-form">
+            <div class="form-row">
+                <div class="form-group grow">
+                    <label for="input-path">Scan Path</label>
+                    <input type="text" id="input-path" value="{{ default_path }}" placeholder="~/">
+                </div>
+                <div class="form-group">
+                    <label for="input-topn">Top N</label>
+                    <input type="number" id="input-topn" value="20" min="1" max="200" style="width:70px">
+                </div>
+                <div class="form-group">
+                    <label for="input-threshold">Threshold (MB)</label>
+                    <input type="number" id="input-threshold" value="100" min="1" style="width:90px">
+                </div>
+                <div class="form-group">
+                    <label for="input-workers">Workers</label>
+                    <input type="number" id="input-workers" value="8" min="1" max="32" style="width:70px">
+                </div>
+                <div class="form-group">
+                    <label for="input-duplicates">Dupes</label>
+                    <input type="checkbox" id="input-duplicates" checked>
+                </div>
+                <div class="form-group">
+                    <button type="submit" id="scan-btn" class="btn btn-primary">Start Scan</button>
+                </div>
+            </div>
+            <div class="form-row" style="margin-top:12px">
+                <div class="form-group grow">
+                    <label for="input-ignore">Ignore Directories</label>
+                    <input type="text" id="input-ignore" placeholder="node_modules, .git, ~/Photos (comma-separated)">
+                </div>
+            </div>
+            <details class="skipped-dirs-details" style="margin-top:12px">
+                <summary class="skipped-dirs-summary">Skipped Directories (click to include in scan)</summary>
+                <div id="skipped-dirs-list" class="skipped-dirs-list"></div>
+            </details>
+        </form>
+
+        <!-- Alert -->
+        <div id="alert-box" class="alert alert-error">
+            <span id="alert-msg"></span>
+        </div>
+
+        <!-- Progress -->
+        <div id="progress-section" class="progress-section">
+            <div class="progress-header">
+                <strong id="progress-phase">Scanning...</strong>
+                <span id="progress-pct" class="progress-pct hidden"></span>
+            </div>
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill"></div>
+            </div>
+            <div id="progress-status" class="progress-status"></div>
+        </div>
+
+        <!-- Results -->
+        <div id="results-section" class="results-section">
+            <!-- Summary: Pie Chart + Cards -->
+            <div class="summary-row">
+                <div class="card disk-chart-card">
+                    <div class="card-label">Disk Usage</div>
+                    <div class="disk-chart-wrap">
+                        <svg id="disk-pie" viewBox="0 0 200 200" class="disk-pie"></svg>
+                        <div id="disk-pie-legend" class="disk-pie-legend"></div>
+                    </div>
+                </div>
+                <div class="summary-cards">
+                    <div class="card">
+                        <div class="card-label">Files Scanned</div>
+                        <div class="card-value" id="stat-files">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Total Size</div>
+                        <div class="card-value" id="stat-size">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Reclaimable</div>
+                        <div class="card-value reclaimable" id="stat-reclaimable">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Scan Time</div>
+                        <div class="card-value" id="stat-time">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Disk Free</div>
+                        <div class="card-value" style="color:var(--success)" id="stat-free">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Disk Total</div>
+                        <div class="card-value" id="stat-disk-total">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div class="category-section">
+                <h2>Breakdown by Category</h2>
+                <div id="category-bars"></div>
+            </div>
+
+            <!-- Treemap -->
+            <div class="treemap-section">
+                <h2>Space Usage Treemap</h2>
+                <div id="treemap-container" class="treemap-container"></div>
+            </div>
+
+            <!-- Treemap Tooltip -->
+            <div id="treemap-tooltip" class="treemap-tooltip">
+                <div class="tt-path"></div>
+                <div class="tt-size"></div>
+                <div class="tt-reason"></div>
+            </div>
+
+            <!-- Recommendations with Category Tabs -->
+            <div class="recs-section">
+                <div class="recs-header">
+                    <h2>Cleanup Recommendations</h2>
+                    <label class="path-toggle">
+                        <input type="checkbox" id="elide-paths" checked>
+                        <span>Short paths</span>
+                    </label>
+                </div>
+                <div class="recs-tabs" id="recs-tabs"></div>
+                <div id="recs-tab-contents"></div>
+                <div class="script-bar">
+                    <span id="selected-count" class="selected-count">0 selected</span>
+                    <button id="dl-script-btn" class="btn btn-secondary" disabled>Download Cleanup Script</button>
+                </div>
+            </div>
+
+            <!-- New Scan -->
+            <div class="new-scan-bar">
+                <button id="new-scan-btn" class="btn btn-secondary">New Scan</button>
+            </div>
+        </div>
+
+    </div><!-- /tab-local -->
+
+    <!-- ═══════════════ GOOGLE DRIVE TAB ═══════════════ -->
+    <div id="tab-gdrive" class="tab-content">
+
+        <!-- Setup / Auth section -->
+        <div id="gdrive-setup" class="scan-form">
+            <div id="gdrive-step-creds">
+                <h2 style="margin-bottom:12px">Connect Google Drive</h2>
+                <p style="color:var(--text-muted);margin-bottom:16px;font-size:0.875rem">
+                    To scan your Google Drive, you need OAuth2 credentials from a Google Cloud project
+                    with the Drive API enabled.<br>
+                    1. Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank"
+                       style="color:var(--accent)">Google Cloud Console &gt; Credentials</a><br>
+                    2. Create an OAuth 2.0 Client ID (Desktop app)<br>
+                    3. Download the JSON file and upload it below
+                </p>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gdrive-creds-file">Credentials JSON</label>
+                        <input type="file" id="gdrive-creds-file" accept=".json"
+                               style="color:var(--text);font-size:0.8rem">
+                    </div>
+                    <div class="form-group">
+                        <button type="button" id="gdrive-upload-btn" class="btn btn-primary">Upload</button>
+                    </div>
+                </div>
+            </div>
+            <div id="gdrive-step-auth" class="hidden">
+                <p style="color:var(--text-muted);margin-bottom:12px;font-size:0.875rem">
+                    Credentials uploaded. Click below to authorize access (opens a Google consent page).
+                </p>
+                <button type="button" id="gdrive-auth-btn" class="btn btn-primary">Authorize Google Drive</button>
+            </div>
+            <div id="gdrive-step-ready" class="hidden">
+                <div class="form-row" style="align-items:center">
+                    <span style="color:var(--success);font-weight:600">Connected to Google Drive</span>
+                    <div style="flex:1"></div>
+                    <div class="form-group" style="flex-direction:row;align-items:center;gap:6px">
+                        <input type="checkbox" id="gdrive-dupes" style="margin:0">
+                        <label for="gdrive-dupes" style="text-transform:none;font-size:0.8rem">Find duplicates</label>
+                    </div>
+                    <button type="button" id="gdrive-scan-btn" class="btn btn-primary">Scan Drive</button>
+                    <button type="button" id="gdrive-disconnect-btn" class="btn btn-exit">Disconnect</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert -->
+        <div id="gdrive-alert-box" class="alert alert-error">
+            <span id="gdrive-alert-msg"></span>
+        </div>
+
+        <!-- Progress -->
+        <div id="gdrive-progress" class="progress-section">
+            <div class="progress-header">
+                <strong>Scanning Google Drive...</strong>
+            </div>
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill"></div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="gdrive-results" class="results-section">
+            <!-- Quota pie + cards -->
+            <div class="summary-row">
+                <div class="card disk-chart-card">
+                    <div class="card-label">Drive Storage</div>
+                    <div class="disk-chart-wrap">
+                        <svg id="gdrive-pie" viewBox="0 0 200 200" class="disk-pie"></svg>
+                        <div id="gdrive-pie-legend" class="disk-pie-legend"></div>
+                    </div>
+                </div>
+                <div class="summary-cards">
+                    <div class="card">
+                        <div class="card-label">Account</div>
+                        <div class="card-value" id="gdrive-email" style="font-size:1rem">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Total Files</div>
+                        <div class="card-value" id="gdrive-total-files">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Drive Usage</div>
+                        <div class="card-value" id="gdrive-usage">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">In Trash</div>
+                        <div class="card-value reclaimable" id="gdrive-trash">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Free</div>
+                        <div class="card-value" style="color:var(--success)" id="gdrive-free">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Quota</div>
+                        <div class="card-value" id="gdrive-quota">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Type breakdown -->
+            <div class="category-section">
+                <h2>Breakdown by File Type</h2>
+                <div id="gdrive-type-bars"></div>
+            </div>
+
+            <!-- File list -->
+            <div class="recs-section">
+                <h2>Largest Files</h2>
+                <table class="recs-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th class="col-size">Size</th>
+                            <th>Type</th>
+                            <th>Modified</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gdrive-files-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Duplicates (shown when checkbox was checked) -->
+            <div id="gdrive-dupes-section" class="recs-section hidden">
+                <h2>Duplicate Files</h2>
+                <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px">
+                    Files with identical MD5 checksums within your Google Drive.
+                    <span id="gdrive-dupes-savings" style="color:var(--danger);font-weight:600"></span>
+                </p>
+                <div id="gdrive-dupes-groups"></div>
+            </div>
+
+            <div class="new-scan-bar">
+                <button id="gdrive-rescan-btn" class="btn btn-secondary">Rescan</button>
+            </div>
+        </div>
+
+    </div><!-- /tab-gdrive -->
+
+    <!-- ═══════════════ DEDUP TAB ═══════════════ -->
+    <div id="tab-dedup" class="tab-content">
+
+        <div class="scan-form">
+            <h2 style="margin-bottom:12px">Cross-Environment Deduplication</h2>
+            <p style="color:var(--text-muted);margin-bottom:16px;font-size:0.875rem">
+                Finds duplicate files across your local disk and Google Drive using MD5 checksums.
+                Run a local scan and/or Google Drive scan first, then compute checksums and find duplicates.
+            </p>
+
+            <!-- Stats -->
+            <div class="summary-cards" style="margin-bottom:16px" id="dedup-stats-cards">
+                <div class="card">
+                    <div class="card-label">Cached Scans</div>
+                    <div class="card-value" id="dedup-scan-count">-</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Total Files</div>
+                    <div class="card-value" id="dedup-file-count">-</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Checksummed</div>
+                    <div class="card-value" id="dedup-checksummed">-</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Sources</div>
+                    <div class="card-value" id="dedup-sources" style="font-size:1rem">-</div>
+                </div>
+            </div>
+
+            <div class="form-row" style="gap:12px">
+                <button type="button" id="dedup-checksum-btn" class="btn btn-primary">
+                    Compute Checksums
+                </button>
+                <button type="button" id="dedup-find-btn" class="btn btn-primary">
+                    Find Duplicates
+                </button>
+                <div class="form-group">
+                    <label for="dedup-min-size">Min Size (KB)</label>
+                    <input type="number" id="dedup-min-size" value="1" min="1" style="width:90px">
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert -->
+        <div id="dedup-alert-box" class="alert alert-error">
+            <span id="dedup-alert-msg"></span>
+        </div>
+
+        <!-- Progress -->
+        <div id="dedup-progress" class="progress-section">
+            <div class="progress-header">
+                <strong id="dedup-progress-label">Computing checksums...</strong>
+            </div>
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill"></div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="dedup-results" class="results-section">
+            <div class="summary-cards" style="margin-bottom:24px">
+                <div class="card">
+                    <div class="card-label">Duplicate Groups</div>
+                    <div class="card-value" id="dedup-group-count">-</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Potential Savings</div>
+                    <div class="card-value reclaimable" id="dedup-savings">-</div>
+                </div>
+            </div>
+
+            <div class="recs-section">
+                <h2>Duplicate Groups</h2>
+                <div id="dedup-groups"></div>
+            </div>
+        </div>
+
+    </div><!-- /tab-dedup -->
+
+</div>
+
+<!-- Exit Confirm Modal -->
+<div id="exit-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-title">Shut down server?</div>
+        <div class="modal-body">The StorageAnalyser server will stop and this page will no longer be active.</div>
+        <div class="modal-actions">
+            <button id="exit-cancel-btn" class="btn btn-secondary">Cancel</button>
+            <button id="exit-confirm-btn" class="btn btn-exit" style="color:var(--danger);border-color:var(--danger)">Shut Down</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script src="/static/gdrive.js"></script>
+<script src="/static/dedup.js"></script>
+</body>
+</html>

@@ -47,23 +47,23 @@ Launch the web UI with `storageanalyser --web`. Features include:
 
 **Scan form** with configurable skipped directories:
 
-![Scan Form](docs/screenshot-scan-form.png)
+![Scan Form](https://raw.githubusercontent.com/jdrumgoole/storageanalyser/main/docs/screenshot-scan-form.png)
 
 **Results summary** with disk usage pie chart and summary cards:
 
-![Results Summary](docs/screenshot-results-summary.png)
+![Results Summary](https://raw.githubusercontent.com/jdrumgoole/storageanalyser/main/docs/screenshot-results-summary.png)
 
 **Category breakdown** and clickable **treemap**:
 
-![Category & Treemap](docs/screenshot-category-treemap.png)
+![Category & Treemap](https://raw.githubusercontent.com/jdrumgoole/storageanalyser/main/docs/screenshot-category-treemap.png)
 
 **Recommendations** organized by category tabs:
 
-![Recommendations](docs/screenshot-recommendations.png)
+![Recommendations](https://raw.githubusercontent.com/jdrumgoole/storageanalyser/main/docs/screenshot-recommendations.png)
 
 **Duplicate detection** with copy count and wasted space:
 
-![Duplicates](docs/screenshot-duplicates.png)
+![Duplicates](https://raw.githubusercontent.com/jdrumgoole/storageanalyser/main/docs/screenshot-duplicates.png)
 
 ## Skipped Directories
 

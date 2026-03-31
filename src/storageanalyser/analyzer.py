@@ -295,6 +295,8 @@ class DiskAnalyzer:
             return
 
         hash_groups: dict[str, list[Path]] = defaultdict(list)
+        total_to_hash = len(to_hash)
+        hashed_count = 0
 
         with ThreadPoolExecutor(max_workers=self.workers) as pool:
             future_to_meta = {
@@ -302,10 +304,25 @@ class DiskAnalyzer:
                 for sz, p in to_hash
             }
             for fut in as_completed(future_to_meta):
+                if self.cancelled:
+                    break
                 sz, p = future_to_meta[fut]
                 h = fut.result()
                 if h:
                     hash_groups[f"{sz}:{h}"].append(p)
+                hashed_count += 1
+                if hashed_count % 100 == 0 or hashed_count == total_to_hash:
+                    msg = f"Hashing {hashed_count:,} / {total_to_hash:,} files…"
+                    if self.progress:
+                        print(f"  …{msg}", end="\r", flush=True)
+                    if self._progress_callback:
+                        self._progress_callback(
+                            "duplicates", msg,
+                            hashed_count, total_to_hash,
+                        )
+
+        if self.progress:
+            print()
 
         for key, paths in hash_groups.items():
             if len(paths) < 2:

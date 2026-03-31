@@ -198,11 +198,20 @@
             var data = JSON.parse(e.data);
             if (data.type === "progress") {
                 progressPhase.textContent = data.message;
-                updateProgressBar(data.files_scanned, data.expected_files);
-                if (data.files_scanned > 0) {
+                if (data.phase === "duplicates") {
+                    // Duplicate hashing phase: files_scanned = hashed count,
+                    // bytes_scanned = total to hash
+                    updateProgressBar(data.files_scanned, data.bytes_scanned);
                     progressStatus.textContent =
-                        data.files_scanned.toLocaleString() + " files \u00b7 " +
-                        humanSize(data.bytes_scanned);
+                        "Hashed " + data.files_scanned.toLocaleString() +
+                        " of " + data.bytes_scanned.toLocaleString() + " candidates";
+                } else {
+                    updateProgressBar(data.files_scanned, data.expected_files);
+                    if (data.files_scanned > 0) {
+                        progressStatus.textContent =
+                            data.files_scanned.toLocaleString() + " files \u00b7 " +
+                            humanSize(data.bytes_scanned);
+                    }
                 }
             } else if (data.type === "done") {
                 eventSource.close();

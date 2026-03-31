@@ -5,6 +5,23 @@ description = "macOS Storage Analyzer & Cleanup Recommender"
 readme = "README.md"
 requires-python = ">=3.13"
 license = {text = "MIT"}
+authors = [
+    {name = "Joe Drumgoole", email = "joe@joedrumgoole.com"},
+]
+keywords = ["disk", "storage", "analyzer", "cleanup", "macos", "duplicate"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
 dependencies = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
@@ -14,6 +31,11 @@ dependencies = [
     "google-auth-httplib2>=0.1",
     "google-auth-oauthlib>=1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/jdrumgoole/storageanalyser"
+Repository = "https://github.com/jdrumgoole/storageanalyser"
+Issues = "https://github.com/jdrumgoole/storageanalyser/issues"
 
 [project.scripts]
 storageanalyser = "storageanalyser.cli:main"

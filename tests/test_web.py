@@ -133,6 +133,52 @@ class TestScanManager:
         scan_manager.reset()
         assert scan_manager.result_to_dict() is None
 
+    def test_generate_script_contains_commands(self, tmp_path: Path) -> None:
+        """Generated script must include a cleanup command for each selected path."""
+        file_a = str(tmp_path / "a.bin")
+        file_b = str(tmp_path / "b.bin")
+        scan_manager._result = ScanResult(root=str(tmp_path))
+        scan_manager._result.recommendations = [
+            Recommendation(path=file_a, size=50_000_000,
+                           category=Category.LARGE_FILE, reason="Large"),
+            Recommendation(path=file_b, size=30_000_000,
+                           category=Category.ARTIFACT, reason="Artifact"),
+        ]
+        scan_manager._scan_id = "gen_test"
+        script = scan_manager.generate_script([file_a, file_b])
+        assert "a.bin" in script
+        assert "b.bin" in script
+        if _IS_WINDOWS:
+            assert "Remove-Item" in script
+        else:
+            assert "rm" in script
+        scan_manager.reset()
+
+    def test_script_download_round_trip(self, tmp_path: Path) -> None:
+        """Paths from result_to_dict must match in generate_script (round-trip)."""
+        file_path = str(tmp_path / "data.bin")
+        scan_manager._result = ScanResult(root=str(tmp_path))
+        scan_manager._result.recommendations = [
+            Recommendation(path=file_path, size=200_000_000,
+                           category=Category.LARGE_FILE, reason="Large file"),
+        ]
+        scan_manager._scan_id = "rt_test"
+
+        # Get the path as the web UI would see it
+        result_dict = scan_manager.result_to_dict()
+        api_path = result_dict["recommendations"][0]["path"]
+
+        # Use that exact path to request a script (simulates the JS flow)
+        with TestClient(app) as client:
+            response = client.get("/api/scan/script", params={"paths": api_path})
+            assert response.status_code == 200
+            assert "data.bin" in response.text
+            if _IS_WINDOWS:
+                assert "Remove-Item" in response.text
+            else:
+                assert "rm " in response.text
+        scan_manager.reset()
+
 
 def _free_port() -> int:
     """Find a free port by binding to port 0 and letting the OS assign one."""

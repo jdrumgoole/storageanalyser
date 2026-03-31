@@ -571,14 +571,23 @@
     }
 
     function shortPath(p) {
-        var home = p.indexOf("/Users/");
+        // Normalise to forward slashes for display
+        var np = p.replace(/\\/g, "/");
+        // macOS/Linux: /Users/name/... or /home/name/...
+        var home = np.indexOf("/Users/");
+        if (home < 0) home = np.indexOf("/home/");
         if (home >= 0) {
-            var parts = p.substring(home).split("/");
+            var parts = np.substring(home).split("/");
             if (parts.length > 3) {
                 return "~/" + parts.slice(3).join("/");
             }
         }
-        var parts2 = p.split("/");
+        // Windows: C:/Users/name/...
+        var winMatch = np.match(/^[A-Za-z]:\/Users\/[^/]+\/(.+)/);
+        if (winMatch) {
+            return "~/" + winMatch[1];
+        }
+        var parts2 = np.split("/");
         return parts2[parts2.length - 1] || p;
     }
 
@@ -598,8 +607,8 @@
      * Replace full paths in a reason string with elided versions.
      */
     function elideReason(reason) {
-        // Match absolute paths starting with /
-        return reason.replace(/\/\S+/g, function (match) {
+        // Match absolute paths: /unix/path or C:\windows\path
+        return reason.replace(/(?:\/\S+|[A-Za-z]:[\\\/]\S+)/g, function (match) {
             // Remove trailing punctuation that isn't part of the path
             var trail = "";
             var m = match.match(/[,)]+$/);
@@ -901,7 +910,26 @@
         if (paths.length === 0) return;
         var params = new URLSearchParams();
         paths.forEach(function (p) { params.append("paths", p); });
-        window.location.assign("/api/scan/script?" + params.toString());
+        fetch("/api/scan/script?" + params.toString())
+            .then(function (r) {
+                if (!r.ok) throw new Error("Server returned " + r.status);
+                var disposition = r.headers.get("content-disposition") || "";
+                var match = disposition.match(/filename=([^\s;]+)/);
+                var filename = match ? match[1] : "cleanup.sh";
+                return r.blob().then(function (blob) {
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement("a");
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            })
+            .catch(function (err) {
+                showAlert("Failed to download script: " + err.message);
+            });
     });
 
     // New scan button

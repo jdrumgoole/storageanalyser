@@ -386,13 +386,17 @@ async def shutdown() -> JSONResponse:
 def _check_port_available(host: str, port: int) -> bool:
     """Return True if the port is available for binding.
 
-    Uses SO_REUSEADDR to match uvicorn's behaviour — lingering TIME_WAIT
-    or CLOSE_WAIT connections from a previous run won't block a restart.
+    On Unix, SO_REUSEADDR lets us bind over lingering TIME_WAIT sockets
+    from a previous run without blocking a restart.
+    On Windows, SO_REUSEADDR dangerously allows *two* processes to bind
+    to the same port at once, so we omit it — the default behaviour on
+    Windows already rejects genuinely in-use ports.
     """
     import socket
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if sys.platform != "win32":
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((host, port))
             return True
     except OSError:

@@ -1,8 +1,16 @@
 """Sphinx configuration for storageanalyser documentation."""
 
+import importlib.metadata
+
 project = "storageanalyser"
-copyright = "2026"
+copyright = "2026, Joe Drumgoole"
 author = "Joe Drumgoole"
+
+try:
+    release = importlib.metadata.version("storageanalyser")
+except importlib.metadata.PackageNotFoundError:
+    release = "dev"
+version = release
 
 extensions = [
     "myst_parser",
@@ -20,3 +28,6 @@ source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
 }
+
+# MyST-Parser settings
+myst_heading_anchors = 3

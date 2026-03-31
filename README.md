@@ -101,3 +101,7 @@ to see the defaults for your OS and `--includedir` to override:
 storageanalyser --list-skipped
 storageanalyser --includedir Music --includedir Movies
 ```
+
+## Documentation
+
+Full documentation is available at [storageanalyser.readthedocs.io](https://storageanalyser.readthedocs.io/).

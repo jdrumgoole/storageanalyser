@@ -17,6 +17,7 @@ from storageanalyser.constants import ONE_MB
 from storageanalyser.database import ScanDatabase
 from storageanalyser.helpers import human_size
 from storageanalyser.models import Category, ScanResult
+from storageanalyser.platform import IS_WINDOWS
 from storageanalyser.report import CATEGORY_COMMANDS
 
 
@@ -236,7 +237,9 @@ class ScanManager:
                     "reason": rec.reason,
                     "age_days": rec.age_days,
                     "priority_score": rec.priority_score,
-                    "cleanup_command": CATEGORY_COMMANDS[rec.category].format(path=shlex.quote(rec.path)),
+                    "cleanup_command": CATEGORY_COMMANDS[rec.category].format(
+                        path=rec.path if IS_WINDOWS else shlex.quote(rec.path)
+                    ),
                 }
                 for rec in r.recommendations
             ],
@@ -244,21 +247,30 @@ class ScanManager:
         }
 
     def generate_script(self, paths: list[str]) -> str:
-        """Generate a bash cleanup script for the given paths."""
+        """Generate a cleanup script for the given paths (bash or PowerShell)."""
         if self._result is None:
             return ""
         rec_by_path = {rec.path: rec for rec in self._result.recommendations}
-        lines = [
-            "#!/usr/bin/env bash",
-            "set -euo pipefail",
-            "# StorageAnalyser cleanup script",
-            "# Review each line before running!",
-            "",
-        ]
+        if IS_WINDOWS:
+            lines = [
+                "# StorageAnalyser cleanup script (PowerShell)",
+                "# Review each line before running!",
+                "$ErrorActionPreference = 'Stop'",
+                "",
+            ]
+        else:
+            lines = [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                "# StorageAnalyser cleanup script",
+                "# Review each line before running!",
+                "",
+            ]
         for p in paths:
             rec = rec_by_path.get(p)
             if rec:
-                cmd = CATEGORY_COMMANDS[rec.category].format(path=shlex.quote(rec.path))
+                quoted = rec.path if IS_WINDOWS else shlex.quote(rec.path)
+                cmd = CATEGORY_COMMANDS[rec.category].format(path=quoted)
                 lines.append(f"{cmd}  # {human_size(rec.size)} — {rec.reason}")
         lines.append("")
         return "\n".join(lines)

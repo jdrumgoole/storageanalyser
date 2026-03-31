@@ -1,14 +1,14 @@
 [project]
 name = "storageanalyser"
 version = "0.1.0"
-description = "macOS Storage Analyzer & Cleanup Recommender"
+description = "Storage Analyzer & Cleanup Recommender"
 readme = "README.md"
 requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [
     {name = "Joe Drumgoole", email = "joe@joedrumgoole.com"},
 ]
-keywords = ["disk", "storage", "analyzer", "cleanup", "macos", "duplicate"]
+keywords = ["disk", "storage", "analyzer", "cleanup", "macos", "windows", "duplicate"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -17,6 +17,7 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
     "Topic :: System :: Systems Administration",

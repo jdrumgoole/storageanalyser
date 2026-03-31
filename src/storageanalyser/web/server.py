@@ -151,11 +151,13 @@ async def download_script(paths: list[str] = Query(default=[])) -> PlainTextResp
         return PlainTextResponse("No scan result available", status_code=404)
     if not paths:
         return PlainTextResponse("No paths selected", status_code=400)
+    from storageanalyser.platform import IS_WINDOWS
     script = scan_manager.generate_script(paths)
+    filename = "cleanup.ps1" if IS_WINDOWS else "cleanup.sh"
     return PlainTextResponse(
         script,
         media_type="text/plain",
-        headers={"Content-Disposition": "attachment; filename=cleanup.sh"},
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 

@@ -1,3 +1,3 @@
-"""macOS Storage Analyzer & Cleanup Recommender."""
+"""Storage Analyzer & Cleanup Recommender."""
 
 __version__ = "0.1.0"

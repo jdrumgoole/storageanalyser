@@ -9,6 +9,7 @@ from pathlib import Path
 
 from storageanalyser.helpers import Colour, human_size
 from storageanalyser.models import Category, ScanResult
+from storageanalyser.platform import IS_WINDOWS
 
 
 CATEGORY_LABELS: dict[Category, str] = {
@@ -20,21 +21,31 @@ CATEGORY_LABELS: dict[Category, str] = {
     Category.DOWNLOAD: "⬇️  Old Download",
 }
 
-CATEGORY_COMMANDS: dict[Category, str] = {
-    Category.JUNK_DIR: "rm -rf '{path}'",
-    Category.ARTIFACT: "rm -rf '{path}'",
-    Category.LARGE_FILE: "rm '{path}'",
-    Category.STALE_FILE: "rm '{path}'",
-    Category.DUPLICATE: "rm '{path}'",
-    Category.DOWNLOAD: "rm -rf '{path}'",
-}
+if IS_WINDOWS:
+    CATEGORY_COMMANDS: dict[Category, str] = {
+        Category.JUNK_DIR: "Remove-Item -Recurse -Force '{path}'",
+        Category.ARTIFACT: "Remove-Item -Recurse -Force '{path}'",
+        Category.LARGE_FILE: "Remove-Item -Force '{path}'",
+        Category.STALE_FILE: "Remove-Item -Force '{path}'",
+        Category.DUPLICATE: "Remove-Item -Force '{path}'",
+        Category.DOWNLOAD: "Remove-Item -Recurse -Force '{path}'",
+    }
+else:
+    CATEGORY_COMMANDS: dict[Category, str] = {
+        Category.JUNK_DIR: "rm -rf '{path}'",
+        Category.ARTIFACT: "rm -rf '{path}'",
+        Category.LARGE_FILE: "rm '{path}'",
+        Category.STALE_FILE: "rm '{path}'",
+        Category.DUPLICATE: "rm '{path}'",
+        Category.DOWNLOAD: "rm -rf '{path}'",
+    }
 
 
 def print_report(result: ScanResult, top_n: int) -> None:
     """Pretty-print the analysis to the terminal."""
     print()
     print(Colour.bold("═" * 72))
-    print(Colour.bold("  macOS Storage Analyzer — Report"))
+    print(Colour.bold("  Storage Analyzer — Report"))
     print(Colour.bold("═" * 72))
     print()
     print(f"  Scanned root:    {result.root}")
@@ -87,19 +98,29 @@ def print_report(result: ScanResult, top_n: int) -> None:
                 print(f"      ≡ {dup.replace(str(Path.home()), '~')}")
             print()
 
+    if IS_WINDOWS:
+        script_ext = "ps1"
+        script_cmd = f"powershell -ExecutionPolicy Bypass -File cleanup.{script_ext}"
+    else:
+        script_ext = "sh"
+        script_cmd = f"bash cleanup.{script_ext}"
+
     print(Colour.bold("  ─" * 36))
     print(Colour.bold("  Quick Cleanup Script"))
     print(Colour.dim("  (Review carefully before running!)"))
     print()
-    print(Colour.dim("  # Save this to cleanup.sh, review, then: bash cleanup.sh"))
+    print(Colour.dim(f"  # Save this to cleanup.{script_ext}, review, then: {script_cmd}"))
     for r in recs[:15]:
         cmd = CATEGORY_COMMANDS[r.category].format(path=r.path)
         print(f"  {cmd}  # {human_size(r.size)} — {r.reason}")
 
     print()
     print(Colour.bold("═" * 72))
-    print(Colour.dim("  ⚠  Always review before deleting! Use Finder's Quick Look (Space bar)"))
-    print(Colour.dim("     to inspect files. Move to Trash first if unsure: mv <file> ~/.Trash/"))
+    if IS_WINDOWS:
+        print(Colour.dim("  ⚠  Always review before deleting! Move to Recycle Bin first if unsure."))
+    else:
+        print(Colour.dim("  ⚠  Always review before deleting! Use Finder's Quick Look (Space bar)"))
+        print(Colour.dim("     to inspect files. Move to Trash first if unsure: mv <file> ~/.Trash/"))
     print(Colour.bold("═" * 72))
     print()
 

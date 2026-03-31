@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from storageanalyser.helpers import human_size
+from storageanalyser.platform import config_dir
 
 SCOPES = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
-CONFIG_DIR = Path.home() / ".config" / "storageanalyser"
+CONFIG_DIR = config_dir()
 CREDENTIALS_FILE = CONFIG_DIR / "google_credentials.json"
 TOKEN_FILE = CONFIG_DIR / "google_token.json"
 

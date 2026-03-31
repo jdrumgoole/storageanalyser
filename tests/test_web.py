@@ -10,10 +10,13 @@ import time
 from pathlib import Path
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from storageanalyser.models import Category, Recommendation, ScanResult
 from storageanalyser.web.server import app, scan_manager
+
+_IS_WINDOWS = sys.platform == "win32"
 
 
 class TestWebPages:
@@ -49,26 +52,28 @@ class TestScanAPI:
             assert "active" in data
             assert "has_result" in data
 
-    def test_script_404_before_scan(self) -> None:
+    def test_script_404_before_scan(self, tmp_path: Path) -> None:
         scan_manager.reset()
         with TestClient(app) as client:
-            response = client.get("/api/scan/script?paths=/tmp/foo")
+            response = client.get(f"/api/scan/script?paths={tmp_path / 'foo'}")
             assert response.status_code == 404
 
-    def test_script_400_no_paths(self) -> None:
+    def test_script_400_no_paths(self, tmp_path: Path) -> None:
         # Inject a fake result
-        scan_manager._result = ScanResult(root="/tmp")
+        scan_manager._result = ScanResult(root=str(tmp_path))
         scan_manager._scan_id = "test123"
         with TestClient(app) as client:
             response = client.get("/api/scan/script")
             assert response.status_code == 400
         scan_manager.reset()
 
-    def test_script_download(self) -> None:
-        scan_manager._result = ScanResult(root="/tmp")
+    def test_script_download(self, tmp_path: Path) -> None:
+        root = str(tmp_path)
+        bigfile = str(tmp_path / "bigfile.bin")
+        scan_manager._result = ScanResult(root=root)
         scan_manager._result.recommendations = [
             Recommendation(
-                path="/tmp/bigfile.bin",
+                path=bigfile,
                 size=100_000_000,
                 category=Category.LARGE_FILE,
                 reason="Large file",
@@ -76,15 +81,18 @@ class TestScanAPI:
         ]
         scan_manager._scan_id = "test456"
         with TestClient(app) as client:
-            response = client.get("/api/scan/script?paths=/tmp/bigfile.bin")
+            response = client.get(f"/api/scan/script?paths={bigfile}")
             assert response.status_code == 200
-            assert "#!/usr/bin/env bash" in response.text
+            if _IS_WINDOWS:
+                assert "Remove-Item" in response.text
+            else:
+                assert "#!/usr/bin/env bash" in response.text
             assert "bigfile.bin" in response.text
             assert "attachment" in response.headers.get("content-disposition", "")
         scan_manager.reset()
 
-    def test_reset_endpoint(self) -> None:
-        scan_manager._result = ScanResult(root="/tmp")
+    def test_reset_endpoint(self, tmp_path: Path) -> None:
+        scan_manager._result = ScanResult(root=str(tmp_path))
         scan_manager._scan_id = "test789"
         with TestClient(app) as client:
             response = client.post("/api/scan/reset")
@@ -200,6 +208,7 @@ class TestServerShutdown:
                 proc.kill()
                 proc.wait(timeout=5)
 
+    @pytest.mark.skipif(_IS_WINDOWS, reason="SIGINT not reliably sendable on Windows")
     def test_ctrl_c_cli_web_mode(self) -> None:
         """storageanalyser --web: Ctrl-C cleanly stops server and frees port."""
         port = _free_port()

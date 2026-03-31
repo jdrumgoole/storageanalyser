@@ -23,6 +23,7 @@ from storageanalyser.constants import (
 )
 from storageanalyser.helpers import Colour, file_age_days, human_size, sha256_head
 from storageanalyser.models import Category, Recommendation, ScanResult
+from storageanalyser.platform import IS_WINDOWS
 
 
 class DiskAnalyzer:
@@ -116,9 +117,11 @@ class DiskAnalyzer:
                     if stat.S_ISLNK(st.st_mode):
                         continue
 
-                    if st.st_ino in self._seen_inodes:
-                        continue
-                    self._seen_inodes.add(st.st_ino)
+                    # On Windows st_ino may be 0; skip dedup in that case
+                    if st.st_ino != 0:
+                        if st.st_ino in self._seen_inodes:
+                            continue
+                        self._seen_inodes.add(st.st_ino)
 
                     if stat.S_ISDIR(st.st_mode):
                         if not self._should_skip(p):

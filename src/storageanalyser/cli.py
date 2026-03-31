@@ -42,17 +42,23 @@ def _force_exit(signum: int, frame: object) -> None:
 def main() -> None:
     signal.signal(signal.SIGINT, _handle_sigint)
 
+    import sys as _sys
+    if _sys.platform == "win32":
+        _path_example = r"%(prog)s D:\Data                   Scan a specific path"
+    else:
+        _path_example = "%(prog)s /Volumes/ExternalDrive    Scan a specific path"
+
     parser = argparse.ArgumentParser(
-        description="macOS Storage Analyzer — find what's eating your disk",
+        description="Storage Analyzer — find what's eating your disk",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""\
+        epilog=f"""\
 Examples:
   %(prog)s                           Scan home directory
-  %(prog)s /Volumes/ExternalDrive    Scan a specific path
+  {_path_example}
   %(prog)s --top 50 --duplicates     Deep scan with dupe detection
   %(prog)s --json | jq '.recommendations[:5]'
   %(prog)s --threshold 50            Flag files over 50 MB (default: 100)
-  %(prog)s --ignoredir node_modules --ignoredir ~/Photos
+  %(prog)s --ignoredir node_modules
 """,
     )
     parser.add_argument(

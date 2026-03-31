@@ -11,8 +11,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 from storageanalyser.helpers import human_size
+from storageanalyser.platform import cache_dir
 
-DEFAULT_DB_PATH = Path.home() / ".cache" / "storageanalyser" / "scans.db"
+DEFAULT_DB_PATH = cache_dir() / "scans.db"
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS scans (

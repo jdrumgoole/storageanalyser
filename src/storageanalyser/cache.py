@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-CACHE_DIR = Path.home() / ".cache" / "storageanalyser"
+from storageanalyser.platform import cache_dir
+
+CACHE_DIR = cache_dir()
 CACHE_FILE = CACHE_DIR / "scan_history.json"
 IGNORE_DIRS_FILE = CACHE_DIR / "ignore_dirs.json"
 

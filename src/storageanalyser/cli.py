@@ -128,10 +128,15 @@ Examples:
         help="Launch the web interface in a browser",
     )
     parser.add_argument(
+        "--desktop",
+        action="store_true",
+        help="Launch as a desktop app with its own window (requires pip install storageanalyser[desktop])",
+    )
+    parser.add_argument(
         "--port",
         type=int,
         default=8888,
-        help="Port for the web server (default: 8888, used with --web)",
+        help="Port for the web server (default: 8888, used with --web or --desktop)",
     )
 
     args = parser.parse_args()
@@ -146,6 +151,11 @@ Examples:
     if args.web:
         from storageanalyser.web.server import run as run_web
         run_web(open_browser=True, port=args.port)
+        return
+
+    if args.desktop:
+        from storageanalyser.desktop import run_desktop
+        run_desktop(port=args.port)
         return
 
     if args.no_color:

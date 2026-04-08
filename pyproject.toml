@@ -42,8 +42,12 @@ Issues = "https://github.com/jdrumgoole/storageanalyser/issues"
 [project.scripts]
 storageanalyser = "storageanalyser.cli:main"
 storageanalyser-web = "storageanalyser.web.server:run"
+storageanalyser-desktop = "storageanalyser.desktop:main"
 
 [project.optional-dependencies]
+desktop = [
+    "pywebview>=5.1",
+]
 dev = [
     "pytest",
     "pytest-xdist",

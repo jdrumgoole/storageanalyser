@@ -1,6 +1,6 @@
 # storageanalyser
 
-macOS Storage Analyzer & Cleanup Recommender.
+Storage Analyzer & Cleanup Recommender for **macOS** and **Windows**.
 
 Scans your home directory (and optionally other paths) to find:
 
@@ -15,7 +15,13 @@ Outputs a prioritised list of cleanup recommendations with estimated space savin
 ## Installation
 
 ```bash
-uv pip install -e ".[dev]"
+pip install storageanalyser
+```
+
+For the desktop app (runs in its own window):
+
+```bash
+pip install storageanalyser[desktop]
 ```
 
 ## Quick Start
@@ -24,32 +30,17 @@ uv pip install -e ".[dev]"
 # Scan home directory
 storageanalyser
 
-# Scan a specific path
-storageanalyser /Volumes/Data
+# Launch the web interface in your browser
+storageanalyser --web
 
-# Show top 30 recommendations
-storageanalyser --top 30
+# Launch as a desktop app
+storageanalyser --desktop
 
-# Include duplicate detection (slower)
+# Include duplicate detection
 storageanalyser --duplicates
-
-# JSON output
-storageanalyser --json
-
-# Lower the large file threshold to 50 MB
-storageanalyser --threshold 50
-
-# Ignore specific directories
-storageanalyser --ignoredir node_modules --ignoredir ~/Photos
-
-# Include a default-skipped directory
-storageanalyser --includedir CloudStorage
 
 # Show which directories are skipped by default
 storageanalyser --list-skipped
-
-# Launch the web interface
-storageanalyser --web
 ```
 
 ## Contents

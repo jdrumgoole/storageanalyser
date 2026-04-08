@@ -1,6 +1,7 @@
 # Web Interface
 
-StorageAnalyser includes a web-based frontend built with FastAPI.
+StorageAnalyser includes a web-based frontend built with FastAPI. You can run it in
+your browser or as a standalone desktop application.
 
 ## Quick Start
 
@@ -11,6 +12,31 @@ storageanalyser --web
 ```
 
 This starts the server on `127.0.0.1:8888`, opens your default browser, and blocks until you click the **Exit** button in the UI (which stops the server and returns control to the terminal).
+
+## Desktop App Mode
+
+Run StorageAnalyser as a standalone desktop application with its own native window:
+
+```bash
+pip install storageanalyser[desktop]
+storageanalyser --desktop
+```
+
+This uses **pywebview** to display the web interface inside a native window using the
+system's built-in WebView engine (WebKit on macOS, WebView2 on Windows). No Chromium
+is bundled — the app stays lightweight.
+
+- The backend server runs in a background process
+- Closing the window cleanly shuts down the server
+- Ctrl-C also exits gracefully
+- Use `--port` to change the backend port if needed
+
+You can also run it directly:
+
+```bash
+storageanalyser-desktop
+storageanalyser-desktop --port 9000
+```
 
 ## Server Management
 

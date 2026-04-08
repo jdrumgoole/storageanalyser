@@ -28,6 +28,7 @@ storageanalyser --includedir CloudStorage # Override a default-skipped directory
 storageanalyser --list-skipped            # Show directories skipped by default
 storageanalyser --web                     # Launch the web interface
 storageanalyser --web --port 9000         # Web interface on a custom port
+storageanalyser --desktop                 # Launch as a desktop app
 ```
 
 Scan a specific drive or folder:
@@ -52,6 +53,20 @@ storageanalyser D:\Data
 | Cleanup script | Bash (.sh) | PowerShell (.ps1) |
 | Duplicate detection | Yes | Yes |
 | Google Drive integration | Yes | Yes |
+| Desktop app mode | Yes | Yes |
+
+## Desktop App
+
+Run StorageAnalyser as a standalone desktop application with its own window:
+
+```bash
+pip install storageanalyser[desktop]
+storageanalyser --desktop
+```
+
+Uses the system's native WebView (WebKit on macOS, WebView2 on Windows) — no
+Chromium bundled. The same web interface runs inside a native window that closes
+cleanly when you're done.
 
 ## Web Interface
 

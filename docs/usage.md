@@ -15,7 +15,8 @@
 | `--includedir` | Override a default-skipped directory so it gets scanned (repeatable) |
 | `--list-skipped` | Print directories skipped by default and exit |
 | `--web` | Launch the web interface in a browser |
-| `--port` | Port for the web server (default: 8888, used with `--web`) |
+| `--desktop` | Launch as a desktop app with its own window (requires `pip install storageanalyser[desktop]`) |
+| `--port` | Port for the backend server (default: 8888, used with `--web` or `--desktop`) |
 
 ## Categories
 
